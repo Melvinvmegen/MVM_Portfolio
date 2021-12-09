@@ -15,7 +15,7 @@
     "core-js": "^3.7.0",
     "nuxt": "^2.14.6",
     "vue-typed-js": "^0.1.2",
-    "vuelidate": "^0.7.6"
+    "vuelidate": "^0.7.7"
   },
   "devDependencies": {
     "@nuxtjs/vuetify": "^1.11.2",
