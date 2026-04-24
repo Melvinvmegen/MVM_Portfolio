@@ -22,6 +22,7 @@
         --accent-dim: #eaaf4a;
         --accent-glow: rgba(249, 210, 98, 0.12);
         --accent-glow2: rgba(249, 210, 98, 0.06);
+        --accent-glow3: rgba(249, 210, 98, 0.3);
         --border: #2a2a2a;
         --font-display: "Cormorant Garamond", serif;
         --font-body: "DM Sans", sans-serif;
@@ -667,6 +668,389 @@
           abstractEl.innerHTML = abstractEl.dataset.full;
           btn.textContent = "Voir moins";
         }
+      }
+
+
+    </script>
+    <!-- Snake Game - start with: ArrowUp, ArrowUp, ArrowDown, ArrowDown -->
+    <script>
+      let konamiCode = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown'];
+      let konamiIndex = 0;
+      
+      document.addEventListener('keydown', function(e) {
+        if (e.key === konamiCode[konamiIndex]) {
+          konamiIndex++;
+          if (konamiIndex === konamiCode.length) {
+            launchSnakeGame();
+            konamiIndex = 0;
+          }
+        } else {
+          konamiIndex = 0;
+        }
+      });
+      
+      function launchSnakeGame() {
+        console.log('%c🎮 JEU CACHÉ DÉVERROUILLÉ! 🎮', 'color: var(--accent); font-size: 16px; font-weight: bold;');
+        console.log('%cSéquence: ↑ ↑ ↓ ↓', 'color: var(--accent); font-size: 14px;');
+        createSnakeGameModal();
+      }
+      
+      function createSnakeGameModal() {
+        const modal = document.createElement('div');
+        modal.id = 'snake-game-modal';
+        modal.style.position = 'fixed';
+        modal.style.top = '0';
+        modal.style.left = '0';
+        modal.style.width = '100%';
+        modal.style.height = '100%';
+        modal.style.backgroundColor = 'var(--bg-primary)';
+        modal.style.display = 'flex';
+        modal.style.flexDirection = 'column';
+        modal.style.alignItems = 'center';
+        modal.style.justifyContent = 'center';
+        modal.style.zIndex = '2000';
+        modal.style.fontFamily = 'var(--font-body)';
+        
+        const gameContainer = document.createElement('div');
+        gameContainer.style.backgroundColor = 'var(--bg-secondary)';
+        gameContainer.style.border = '2px solid var(--accent)';
+        gameContainer.style.borderRadius = '10px';
+        gameContainer.style.padding = '20px';
+        gameContainer.style.boxShadow = '0 0 20px var(----accent-glow3)';
+        gameContainer.style.maxWidth = '500px';
+        gameContainer.style.width = '90%';
+
+        const title = document.createElement('h2');
+        title.textContent = '🎮 Snake Game';
+        title.style.color = 'var(--accent)';
+        title.style.textAlign = 'center';
+        title.style.marginBottom = '15px';
+        
+        const instructions = document.createElement('p');
+        instructions.textContent = 'Utilisez les flèches directionnelles pour jouer. Appuyez sur ÉCHAP pour quitter.';
+        instructions.style.color = 'var(--text-secondary)';
+        instructions.style.textAlign = 'center';
+        instructions.style.marginBottom = '15px';
+        instructions.style.fontSize = '14px';
+        
+        const startButton = document.createElement('button');
+        startButton.id = 'snake-game-start';
+        startButton.textContent = 'COMMENCER LE JEU';
+        startButton.style.backgroundColor = 'var(--accent)';
+        startButton.style.color = 'var(--bg-primary)';
+        startButton.style.border = 'none';
+        startButton.style.padding = '12px 25px';
+        startButton.style.borderRadius = '5px';
+        startButton.style.fontWeight = 'bold';
+        startButton.style.fontSize = '14px';
+        startButton.style.cursor = 'pointer';
+        startButton.style.display = 'block';
+        startButton.style.margin = '15px auto';
+        startButton.style.transition = 'all 0.2s';
+        
+        startButton.addEventListener('mouseover', function() {
+          startButton.style.transform = 'translateY(-2px)';
+          startButton.style.boxShadow = '0 4px 8px var(----accent-glow3)';
+        });
+        
+        startButton.addEventListener('mouseout', function() {
+          startButton.style.transform = 'translateY(0)';
+          startButton.style.boxShadow = 'none';
+        });
+        
+        const scoreDisplay = document.createElement('div');
+        scoreDisplay.id = 'snake-game-score';
+        scoreDisplay.textContent = 'Score: 0';
+        scoreDisplay.style.color = 'var(--text-primary)';
+        scoreDisplay.style.textAlign = 'center';
+        scoreDisplay.style.fontSize = '16px';
+        scoreDisplay.style.fontWeight = 'bold';
+        scoreDisplay.style.display = 'none'; // Hidden until game starts
+        
+        const countdownDisplay = document.createElement('div');
+        countdownDisplay.id = 'snake-game-countdown';
+        countdownDisplay.style.color = 'var(--accent)';
+        countdownDisplay.style.textAlign = 'center';
+        countdownDisplay.style.fontSize = '24px';
+        countdownDisplay.style.fontWeight = 'bold';
+        countdownDisplay.style.margin = '20px 0';
+        countdownDisplay.style.display = 'none';
+        
+        gameContainer.appendChild(title);
+        gameContainer.appendChild(instructions);
+        gameContainer.appendChild(startButton);
+        gameContainer.appendChild(countdownDisplay);
+        gameContainer.appendChild(scoreDisplay);
+        modal.appendChild(gameContainer);
+        
+        document.body.appendChild(modal);
+        
+        document.body.style.overflow = 'hidden';
+        
+        const width = 20;
+        const height = 15;
+        const maxScore = 10;
+        let gameCanvas = null;
+        let gameActive = true;
+        let score = 0;
+        let direction = 'RIGHT';
+        let snake = generateSnake();
+        let food = generateApple();
+        let gameSpeed = 200;
+        let gameInterval;
+
+        function generateSnake() {
+          return [{
+            x: Math.min(Math.floor(Math.random() * width),  width - 3),
+            y: Math.min(Math.floor(Math.random() * height),  height - 3)
+          }];
+        }
+        
+        function generateApple() {
+          let newFood;
+          do {
+            newFood = {
+              x: Math.floor(Math.random() * width),
+              y: Math.floor(Math.random() * height)
+            };
+          } while (snake.some(segment => segment.x === newFood.x && segment.y === newFood.y));
+          return newFood;
+        }
+        
+        function drawGame(canvas) {
+          let output = '';
+          
+          output += '╔' + '═'.repeat(width) + '╗\n';
+          for (let y = 0; y < height; y++) {
+            output += '║';
+            for (let x = 0; x < width; x++) {
+              const isHead = snake[0].x === x && snake[0].y === y;
+              const isBody = snake.some(segment => segment.x === x && segment.y === y);
+              const isFood = food.x === x && food.y === y;
+              
+              if (isHead) {
+                output += '🐍';
+              } else if (isBody) {
+                output += 'o';
+              } else if (isFood) {
+                output += '🍎';
+              } else {
+                output += ' ';
+              }
+            }
+            output += '║\n';
+          }
+          
+          output += '╚' + '═'.repeat(width) + '╝';
+          gameContainer.appendChild(gameCanvas);
+          
+          gameCanvas.textContent = output;
+          scoreDisplay.textContent = 'Score: ' + score;
+        }
+        
+        function updateGame() {
+          if (!gameActive) return;
+          
+          const head = {...snake[0]};
+          switch (direction) {
+            case 'UP':
+              head.y--;
+              console.log('Moving UP');
+              break;
+            case 'DOWN':
+              head.y++;
+              console.log('Moving DOWN');
+              break;
+            case 'LEFT':
+              head.x--;
+              console.log('Moving LEFT');
+              break;
+            case 'RIGHT':
+              head.x++;
+              console.log('Moving RIGHT');
+              break;
+          }
+          
+          if (head.x < 0 || head.x >= width || head.y < 0 || head.y >= height ||
+              snake.some(segment => segment.x === head.x && segment.y === head.y)) {
+            gameOver();
+            return;
+          }
+          
+          snake.unshift(head);
+          
+          if (head.x === food.x && head.y === food.y) {
+            score++;
+            scoreDisplay.textContent = 'Score: ' + score;
+            
+            if (score >= maxScore) {
+              gameWin();
+              return;
+            }
+            
+            food = generateApple();
+            if (gameSpeed > 100) {
+              gameSpeed -= 5;
+              clearInterval(gameInterval);
+              gameInterval = setInterval(updateGame, gameSpeed);
+            }
+          } else {
+            snake.pop();
+          }
+          
+          drawGame();
+        }
+        
+        function gameOver() {
+          gameActive = false;
+          clearInterval(gameInterval);
+          
+          const gameOverMessage = document.createElement('div');
+          gameOverMessage.textContent = 'GAME OVER! Score final: ' + score;
+          gameOverMessage.style.color = 'var(--accent)';
+          gameOverMessage.style.textAlign = 'center';
+          gameOverMessage.style.marginTop = '15px';
+          gameOverMessage.style.fontWeight = 'bold';
+          gameOverMessage.style.fontSize = '18px';
+          
+          gameContainer.appendChild(gameOverMessage);
+          
+          addRestartButton();
+        }
+        
+        function gameWin() {
+          gameActive = false;
+          clearInterval(gameInterval);
+          
+          const winMessage = document.createElement('div');
+          winMessage.textContent = '🎉 FÉLICITATIONS! Vous avez gagné! 🎉';
+          winMessage.style.color = 'var(--accent)';
+          winMessage.style.textAlign = 'center';
+          winMessage.style.marginTop = '15px';
+          winMessage.style.fontWeight = 'bold';
+          winMessage.style.fontSize = '20px';
+          
+          const scoreMessage = document.createElement('div');
+          scoreMessage.textContent = 'Score final: ' + score + `(Objectif: ${maxScore} pommes)`;
+          scoreMessage.style.color = 'var(--text-primary)';
+          scoreMessage.style.textAlign = 'center';
+          scoreMessage.style.marginTop = '10px';
+          scoreMessage.style.fontSize = '16px';
+          
+          gameContainer.appendChild(winMessage);
+          gameContainer.appendChild(scoreMessage);
+          
+          addRestartButton();
+        }
+        
+        function addRestartButton() {
+          const restartButton = document.createElement('button');
+          restartButton.textContent = 'Rejouer';
+          restartButton.style.backgroundColor = 'var(--accent)';
+          restartButton.style.color = 'var(--bg-primary)';
+          restartButton.style.border = 'none';
+          restartButton.style.padding = '12px 25px';
+          restartButton.style.borderRadius = '5px';
+          restartButton.style.marginTop = '20px';
+          restartButton.style.cursor = 'pointer';
+          restartButton.style.fontWeight = 'bold';
+          restartButton.style.display = 'block';
+          restartButton.style.marginLeft = 'auto';
+          restartButton.style.marginRight = 'auto';
+          restartButton.style.fontSize = '14px';
+          restartButton.style.transition = 'all 0.2s';
+          
+          restartButton.addEventListener('mouseover', function() {
+            restartButton.style.transform = 'translateY(-2px)';
+            restartButton.style.boxShadow = '0 4px 8px var(--accent-glow3)';
+          });
+          
+          restartButton.addEventListener('mouseout', function() {
+            restartButton.style.transform = 'translateY(0)';
+            restartButton.style.boxShadow = 'none';
+          });
+          
+          restartButton.addEventListener('click', function() {
+            document.body.removeChild(modal);
+            createSnakeGameModal();
+          });
+          
+          gameContainer.appendChild(restartButton);
+        }
+        
+        function handleKeyDown(e) {
+          if (!gameActive || !document.body.contains(modal)) return;
+          
+          const keyCode = e.keyCode || e.which;
+          
+          if ([38, 40, 37, 39].includes(keyCode)) {
+            e.preventDefault();
+            e.stopPropagation();
+          }
+          
+          if (keyCode === 27) { // Escape key
+            document.body.removeChild(modal);
+          } else if (keyCode === 38 && direction !== 'DOWN') { // Up arrow
+            direction = 'UP';
+          } else if (keyCode === 40 && direction !== 'UP') { // Down arrow
+            direction = 'DOWN';
+          } else if (keyCode === 37 && direction !== 'RIGHT') { // Left arrow
+            direction = 'LEFT';
+          } else if (keyCode === 39 && direction !== 'LEFT') { // Right arrow
+            direction = 'RIGHT';
+          }
+        }
+        
+        startButton.addEventListener('click', function() {
+          startButton.style.display = 'none';
+          instructions.style.display = 'none';
+          countdownDisplay.style.display = 'block';
+          
+          let count = 3;
+          countdownDisplay.textContent = count;
+          
+          const countdown = setInterval(function() {
+            count--;
+            if (count > 0) {
+              countdownDisplay.textContent = count;
+            } else {
+              clearInterval(countdown);
+              countdownDisplay.style.display = 'none';
+              scoreDisplay.style.display = 'block';
+              
+              gameActive = true;
+              gameCanvas = document.createElement('pre');
+              gameCanvas.id = 'snake-game-canvas';
+              gameCanvas.style.backgroundColor = 'var(--bg-primary)';
+              gameCanvas.style.color = 'var(--text-primary)';
+              gameCanvas.style.padding = '15px';
+              gameCanvas.style.borderRadius = '5px';
+              gameCanvas.style.fontFamily = 'monospace';
+              gameCanvas.style.fontSize = '14px';
+              gameCanvas.style.lineHeight = '1.2';
+              gameCanvas.style.textAlign = 'center';
+              gameCanvas.style.marginBottom = '15px';
+              gameCanvas.style.overflow = 'hidden';
+              drawGame();
+              if (gameInterval) clearInterval(gameInterval);
+              gameInterval = setInterval(updateGame, gameSpeed);
+            }
+          }, 1000);
+        });
+        
+        document.addEventListener('keydown', handleKeyDown);
+        
+        modal.addEventListener('remove', function() {
+          document.removeEventListener('keydown', handleKeyDown);
+          clearInterval(gameInterval);
+          document.body.style.overflow = '';
+        });
+        
+        document.addEventListener('keydown', function escapeHandler(e) {
+          if (e.key === 'Escape') {
+            document.removeEventListener('keydown', escapeHandler);
+          }
+        });
       }
     </script>
   </body>
